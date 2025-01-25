@@ -282,36 +282,45 @@ namespace SnippingToolOcr
             }
 
             // Convert the image format to BGRA
-            Bitmap imgRgba = new Bitmap(img.Width, img.Height, PixelFormat.Format32bppArgb);
-            using (Graphics g = Graphics.FromImage(imgRgba))
+            try
             {
-                g.DrawImage(img, 0, 0);
+                using (Bitmap imgRgba = new Bitmap(img.Width, img.Height, PixelFormat.Format32bppArgb))
+                {
+                    using (Graphics g = Graphics.FromImage(imgRgba))
+                    {
+                        g.DrawImage(img, 0, 0);
+                    }
+
+                    int rows = imgRgba.Height;
+                    int cols = imgRgba.Width;
+                    int step = System.Drawing.Image.GetPixelFormatSize(imgRgba.PixelFormat) / 8 * cols;
+
+                    // Get pixel data
+                    BitmapData bitmapData = imgRgba.LockBits(new Rectangle(0, 0, imgRgba.Width, imgRgba.Height), ImageLockMode.ReadOnly, imgRgba.PixelFormat);
+                    IntPtr dataPtr = bitmapData.Scan0;
+
+                    // Create an instance of the Img structure
+                    Img formattedImage = new Img
+                    {
+                        t = 3,
+                        col = cols,
+                        row = rows,
+                        _unk = 0,
+                        step = step,
+                        data_ptr = dataPtr
+                    };
+
+                    // Execute OCR processing
+                    Line[] result = RunOcr(formattedImage);
+
+                    imgRgba.UnlockBits(bitmapData);
+                    return result;
+                }
             }
-
-            int rows = imgRgba.Height;
-            int cols = imgRgba.Width;
-            int step = System.Drawing.Image.GetPixelFormatSize(imgRgba.PixelFormat) / 8 * cols;
-
-            // Get pixel data
-            BitmapData bitmapData = imgRgba.LockBits(new Rectangle(0, 0, imgRgba.Width, imgRgba.Height), ImageLockMode.ReadOnly, imgRgba.PixelFormat);
-            IntPtr dataPtr = bitmapData.Scan0;
-
-            // Create an instance of the Img structure
-            Img formattedImage = new Img
+            finally
             {
-                t = 3,
-                col = cols,
-                row = rows,
-                _unk = 0,
-                step = step,
-                data_ptr = dataPtr
-            };
-
-            // Execute OCR processing
-            Line[] result = RunOcr(formattedImage);
-
-            imgRgba.UnlockBits(bitmapData);
-            return result;
+                img.Dispose();
+            }
         }
     }
 }
