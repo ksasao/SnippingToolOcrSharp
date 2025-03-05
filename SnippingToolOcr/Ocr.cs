@@ -322,5 +322,75 @@ namespace SnippingToolOcr
                 img.Dispose();
             }
         }
+
+        public Line[] DataUrlToText(string dataUrl)
+        {
+            if (!IsAvailable)
+            {
+                return null;
+            }
+
+            // Load the image
+            Bitmap img;
+
+            try
+            {
+                string base64Data = dataUrl.Substring(dataUrl.IndexOf(',') + 1);
+
+                // Convert BASE64 string to byte array
+                byte[] imageBytes = Convert.FromBase64String(base64Data);
+
+                using (MemoryStream ms = new MemoryStream(imageBytes))
+                {
+                    img = new Bitmap(ms);
+                }
+            }
+            catch (Exception)
+            {
+                Console.Error.WriteLine("Can't read image!");
+                return null;
+            }
+
+            // Convert the image format to BGRA
+            try
+            {
+                using (Bitmap imgRgba = new Bitmap(img.Width, img.Height, PixelFormat.Format32bppArgb))
+                {
+                    using (Graphics g = Graphics.FromImage(imgRgba))
+                    {
+                        g.DrawImage(img, 0, 0);
+                    }
+                    imgRgba.Save("test-decode.png");
+                    int rows = imgRgba.Height;
+                    int cols = imgRgba.Width;
+                    int step = System.Drawing.Image.GetPixelFormatSize(imgRgba.PixelFormat) / 8 * cols;
+
+                    // Get pixel data
+                    BitmapData bitmapData = imgRgba.LockBits(new Rectangle(0, 0, imgRgba.Width, imgRgba.Height), ImageLockMode.ReadOnly, imgRgba.PixelFormat);
+                    IntPtr dataPtr = bitmapData.Scan0;
+
+                    // Create an instance of the Img structure
+                    Img formattedImage = new Img
+                    {
+                        t = 3,
+                        col = cols,
+                        row = rows,
+                        _unk = 0,
+                        step = step,
+                        data_ptr = dataPtr
+                    };
+
+                    // Execute OCR processing
+                    Line[] result = RunOcr(formattedImage);
+
+                    imgRgba.UnlockBits(bitmapData);
+                    return result;
+                }
+            }
+            finally
+            {
+                img.Dispose();
+            }
+        }
     }
 }

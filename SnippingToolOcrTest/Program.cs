@@ -15,6 +15,8 @@ namespace SnippingToolOcrTest
     {
         static void Main(string[] args)
         {
+            bool isDataUrl = false;
+
             var ocr = new SnippingToolOcr.Ocr();
             if (!ocr.IsAvailable)
             {
@@ -22,12 +24,20 @@ namespace SnippingToolOcrTest
             }
             if (args.Length == 0)
             {
-                Console.WriteLine("Usage: SnippingToolOcrTest <image file path>");
+                Console.WriteLine("Usage: SnippingToolOcrTest <image file path or data url>");
                 return;
             }
 
-            // Execute OCR
-            var lines = ocr.ConvertToText(args[0]);
+            Line[] lines;
+
+            if (args[0].StartsWith("data:image/")){
+                lines = ocr.DataUrlToText(args[0]);
+                isDataUrl = true;
+            }
+            else
+            {
+                lines = ocr.ConvertToText(args[0]);
+            }
             for (int i = 0; i < lines.Length; i++)
             {
                 Console.WriteLine($"{i}: {lines[i]}");
@@ -43,7 +53,10 @@ namespace SnippingToolOcrTest
             Console.WriteLine(json);
 
             // Save the result as an image
-            SaveResultImage(args[0], lines);
+            if (!isDataUrl)
+            {
+                SaveResultImage(args[0], lines);
+            }
 
             return;
         }
