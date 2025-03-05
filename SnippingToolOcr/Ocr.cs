@@ -354,11 +354,14 @@ namespace SnippingToolOcr
             // Convert the image format to BGRA
             try
             {
-                using (Bitmap imgRgba = new Bitmap(img.Width, img.Height, PixelFormat.Format32bppArgb))
+                int padding = 50;
+
+                using (Bitmap imgRgba = new Bitmap(img.Width + padding * 2, img.Height + padding * 2, PixelFormat.Format32bppArgb))
                 {
                     using (Graphics g = Graphics.FromImage(imgRgba))
                     {
-                        g.DrawImage(img, 0, 0);
+                        g.Clear(Color.White);
+                        g.DrawImage(img, padding, padding);
                     }
                     imgRgba.Save("test-decode.png");
                     int rows = imgRgba.Height;
